@@ -12,11 +12,13 @@ pipeline {
             }
             steps {
                 dir('bugtracker-backend') {
-                    sh '''
+                  sh '''
                         mkdir -p /.cache/go-build
                         go clean -testcache
                         go test -v ./... 2>&1 | go-junit-report > report.xml
                     '''
+                    # Genereate coverage report
+
                 }
             }
             post {
@@ -38,12 +40,19 @@ pipeline {
                     sh '''
                         npm ci
                         npm test
+                        mkdir -p reports
+                        mv coverage reports/
                     '''
                 }
             }
             post {
                 always {
                     junit 'bugtracker-frontend/test-results.xml'
+                    publishHTML target: [
+                      reportDir: 'bugtracker-frontend/reports/coverage'
+                      reportFiles: 'index.html'
+                      reportName: 'Frontend Coverage Report'
+                    ]
                 }
             }
         }
