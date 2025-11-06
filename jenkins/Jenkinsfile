@@ -15,35 +15,37 @@ pipeline {
                     sh '''
                         mkdir -p /.cache/go-build
                         go clean -testcache
-                        go test -v ./...
+                        go test -v ./... | go-junit-report > report.xml
                     '''
+                }
+            }
+            post {
+                always {
+                    junit 'bugtracker-backend/report.xml'
                 }
             }
         }
 
         stage('Unit Tests - Frontend') {
-          agent{ 
-            docker{
-              image 'node: 20-alpine'
-              reuseNode true
+            agent {
+                docker {
+                    image 'node:20-alpine'
+                    reuseNode true
+                }
             }
-          }
-
-          steps {
-              dir('bugtracker-frontend') {
-                sh '''
-                 npm ci
-                 npm test
-               
-                '''
-              }
-          }
-
-          post {
-            always {
-              junit 'bugtracker-frontend/test-results.xml'
+            steps {
+                dir('bugtracker-frontend') {
+                    sh '''
+                        npm ci
+                        npm test
+                    '''
+                }
             }
-          }
+            post {
+                always {
+                    junit 'bugtracker-frontend/test-results.xml'
+                }
+            }
         }
     }
 }
