@@ -15,7 +15,7 @@ pipeline {
                     sh '''
                         mkdir -p /.cache/go-build
                         go clean -testcache
-                        go test -v ./... | go-junit-report > report.xml
+                        go test -v ./... 2>&1 | go-junit-report > report.xml
                     '''
                 }
             }
