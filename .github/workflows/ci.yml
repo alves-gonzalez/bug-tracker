@@ -23,10 +23,12 @@ jobs:
           go install github.com/jstemmer/go-junit-report/v2@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Execute Backend Unit Tests
+      - name: Execute Backend Unit Tests with Coverage
         working-directory: ./bugtracker-backend
         run: |
           go test -v -coverprofile=coverage.out ./... 2>&1 | go-junit-report > test-results.xml
+          go tool cover -func=coverage.out > coverage.txt
+          go tool cover -html=coverage.out -o coverage.html
 
       - name: Publish backend test results
         uses: dorny/test-reporter@v1
@@ -35,6 +37,27 @@ jobs:
           name: Backend Unit Test Report
           path: bugtracker-backend/test-results.xml
           reporter: jest-junit
+
+      - name: Upload Backend Coverage Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: |
+            bugtracker-backend/coverage.out
+            bugtracker-backend/coverage.txt
+            bugtracker-backend/coverage.html
+
+      - name: Comment Backend Coverage Summary
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: always()
+        with:
+          recreate: true
+          header: backend-coverage
+          message: |
+            **Backend Code Coverage Summary**
+            ```
+            $(cat bugtracker-backend/coverage.txt)
+            ```
 
   unit_tests-frontend:
     needs: unit-tests-backend
@@ -49,7 +72,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: bugtracker-frontend/package-lock.json
 
-      - name: Execute Frontend Unit Tests
+      - name: Execute Frontend Unit Tests with Coverage
         working-directory: ./bugtracker-frontend
         run: |
           npm ci
@@ -62,3 +85,21 @@ jobs:
           name: Frontend Unit Tests Report
           path: bugtracker-frontend/test-results.xml
           reporter: jest-junit
+
+      - name: Upload Frontend Coverage Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: bugtracker-frontend/coverage
+
+      - name: Comment Frontend Coverage Summary
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: always()
+        with:
+          recreate: true
+          header: frontend-coverage
+          message: |
+            **Frontend Code Coverage Summary**
+            ```
+            $(npx jest --coverage --coverageReporters=text-summary | tee /dev/tty)
+            ```
