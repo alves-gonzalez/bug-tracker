@@ -5,25 +5,32 @@ pipeline {
         stage('Unit Tests - Backend') {
             agent {
                 docker {
-                    image 'snakee/golang-junit:1.21'
+                    image 'golang:1.21'
                     args '-u root'
                     reuseNode true
                 }
             }
             steps {
                 dir('bugtracker-backend') {
-                  sh '''
+                    sh '''
                         mkdir -p /.cache/go-build
+                        go install github.com/jstemmer/go-junit-report@latest
                         go clean -testcache
-                        go test -v ./... 2>&1 | go-junit-report > report.xml
+                        go test -v -coverprofile=coverage.out ./... 2>&1 | go-junit-report > report.xml
+                        go tool cover -html=coverage.out -o coverage.html
+                        mkdir -p reports
+                        mv coverage.html reports/
                     '''
-                    # Genereate coverage report
-
                 }
             }
             post {
                 always {
                     junit 'bugtracker-backend/report.xml'
+                    publishHTML target: [
+                      reportDir: 'bugtracker-backend/reports',
+                      reportFiles: 'coverage.html',
+                      reportName: 'Backend Coverage Report'
+                    ]
                 }
             }
         }
@@ -39,9 +46,7 @@ pipeline {
                 dir('bugtracker-frontend') {
                     sh '''
                         npm ci
-                        npm test
-                        mkdir -p reports
-                        mv coverage reports/
+                        npm test -- --coverage
                     '''
                 }
             }
@@ -49,7 +54,7 @@ pipeline {
                 always {
                     junit 'bugtracker-frontend/test-results.xml'
                     publishHTML target: [
-                      reportDir: 'bugtracker-frontend/reports/coverage',
+                      reportDir: 'bugtracker-frontend/coverage',
                       reportFiles: 'index.html',
                       reportName: 'Frontend Coverage Report'
                     ]
