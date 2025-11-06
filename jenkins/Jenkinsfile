@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Execute Unit Tests') {
             parallel {
-                Backend: {
+                stage('Unit Tests - Backend') {
                     agent {
                         docker {
                             image 'golang:1.21'
@@ -33,11 +33,12 @@ pipeline {
                                 reportFiles: 'coverage.html',
                                 reportName: 'Backend Coverage Report'
                             ]
+                            cleanWs()
                         }
                     }
                 }
 
-                Frontend: {
+                stage('Unit Tests - Frontend') {
                     agent {
                         docker {
                             image 'node:20-alpine'
@@ -60,6 +61,7 @@ pipeline {
                                 reportFiles: 'index.html',
                                 reportName: 'Frontend Coverage Report'
                             ]
+                            cleanWs()
                         }
                     }
                 }
