@@ -31,8 +31,8 @@ jobs:
 
       - name: Publish backend test results
       uses: dorny/test-reporter@v1
-        if: always()
-        with:
+      if: always()
+      with:
           name: Backend Unit Test Report
           path: bugtracker-backend/test-results.xml
           reporter: jest-junit
